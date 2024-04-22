@@ -1,0 +1,26 @@
+# Use the official Rust image as the base image
+FROM rust:1.58 as builder
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the local Cargo.toml and Cargo.lock files to the working directory
+COPY Cargo.toml Cargo.lock ./
+
+# Build a dummy project to cache dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release
+
+# Copy the entire local project to the working directory
+COPY . .
+
+# Build the Rust application
+RUN cargo build --release
+
+# Use a lightweight image for the final stage
+FROM debian:buster-slim
+
+# Copy the built binary from the builder stage to the new image
+COPY --from=builder /app/target/release/new /usr/local/bin/new
+
+# Set the command to run your binary
+CMD ["/usr/local/bin/new"]
